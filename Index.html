@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhythm Mania</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+body {
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background:
+        radial-gradient(circle at center, #252525 0%, #090909 70%);
+    color: white;
+    overflow: hidden;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ================= MENU ================= */
+
+#menu {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.logo {
+    font-size: clamp(45px, 9vw, 100px);
+    font-weight: 900;
+    letter-spacing: -5px;
+    transform: rotate(-2deg);
+    text-shadow:
+        5px 5px 0 #000,
+        0 0 30px rgba(255,255,255,.2);
+    animation: logoFloat 2s infinite ease-in-out;
+}
+
+.subtitle {
+    margin-top: 5px;
+    color: #aaa;
+    letter-spacing: 5px;
+    font-size: 13px;
+}
+
+.menuButtons {
+    margin-top: 50px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: min(330px, 85vw);
+}
+
+.menuButton {
+    border: 3px solid white;
+    background: #111;
+    color: white;
+    padding: 18px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 14px;
+    transition: .15s;
+}
+
+.menuButton:hover {
+    background: white;
+    color: black;
+    transform: scale(1.05);
+}
+
+.menuButton:active {
+    transform: scale(.97);
+}
+
+.musicStatus {
+    margin-top: 30px;
+    color: #777;
+    font-size: 13px;
+}
+
+@keyframes logoFloat {
+    0%,100% { transform: rotate(-2deg) translateY(0); }
+    50% { transform: rotate(2deg) translateY(-8px); }
+}
+
+/* ================= GAME ================= */
+
+#game {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.topBar {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 20;
+}
+
+.stat {
+    background: rgba(0,0,0,.65);
+    border: 2px solid white;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+#gameArea {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#gameTitle {
+    font-size: clamp(28px, 6vw, 55px);
+    margin-bottom: 10px;
+}
+
+#instructions {
+    color: #aaa;
+    margin-bottom: 30px;
+}
+
+/* PERSONNAGE */
+
+.character {
+    width: min(360px, 75vw);
+    height: min(360px, 75vw);
+    position: relative;
+    border-radius: 50%;
+    background: #d99467;
+    border: 7px solid #111;
+    box-shadow: inset 0 -25px 0 rgba(0,0,0,.12);
+}
+
+.eye {
+    position: absolute;
+    width: 28px;
+    height: 40px;
+    background: #111;
+    border-radius: 50%;
+    top: 100px;
+}
+
+.eye.left {
+    left: 85px;
+}
+
+.eye.right {
+    right: 85px;
+}
+
+.mouth {
+    position: absolute;
+    width: 110px;
+    height: 45px;
+    border-bottom: 8px solid #111;
+    border-radius: 50%;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 75px;
+}
+
+/* POILS */
+
+.hair {
+    position: absolute;
+    width: 18px;
+    height: 55px;
+    background: #21150f;
+    border-radius: 10px;
+    transform-origin: bottom center;
+    transition: .12s;
+}
+
+.hair.removed {
+    animation: hairRemove .3s forwards;
+}
+
+@keyframes hairRemove {
+    0% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-60px) rotate(180deg) scale(.1);
+        opacity: 0;
+    }
+}
+
+/* CERCLE RYTHME */
+
+#beatCircle {
+    position: absolute;
+    bottom: 45px;
+    width: 100px;
+    height: 100px;
+    border: 5px solid white;
+    border-radius: 50%;
+    transition: transform .08s;
+}
+
+#beatCircle.beat {
+    transform: scale(1.35);
+    background: rgba(255,255,255,.15);
+}
+
+/* FEEDBACK */
+
+#feedback {
+    position: absolute;
+    top: 35%;
+    font-size: clamp(35px, 8vw, 75px);
+    font-weight: 900;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(.5);
+}
+
+#feedback.show {
+    animation: feedback .65s forwards;
+}
+
+@keyframes feedback {
+    0% {
+        opacity: 0;
+        transform: scale(.5) rotate(-10deg);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.2) rotate(5deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.4) rotate(0);
+    }
+}
+
+/* BOUTON ACTION */
+
+#actionButton {
+    position: absolute;
+    bottom: 35px;
+    padding: 16px 35px;
+    border: 3px solid white;
+    background: white;
+    color: black;
+    border-radius: 50px;
+    font-size: 20px;
+    font-weight: bold;
+    display: none;
+}
+
+/* ================= RESULT ================= */
+
+#result {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.95);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    z-index: 50;
+}
+
+#result h2 {
+    font-size: 55px;
+}
+
+.finalScore {
+    font-size: 35px;
+    margin: 20px;
+}
+
+.resultButton {
+    padding: 15px 30px;
+    background: white;
+    border: 0;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 5px;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:600px) {
+    .character {
+        width: 260px;
+        height: 260px;
+    }
+
+    .eye {
+        width: 20px;
+        height: 30px;
+        top: 75px;
+    }
+
+    .eye.left {
+        left: 60px;
+    }
+
+    .eye.right {
+        right: 60px;
+    }
+
+    .mouth {
+        bottom: 55px;
+    }
+
+    #actionButton {
+        display: block;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= MENU ================= -->
+
+<section id="menu">
+
+    <div class="logo">RHYTHM<br>MANIA</div>
+
+    <div class="subtitle">
+        LE JEU DU RYTHME
+    </div>
+
+    <div class="menuButtons">
+
+        <button class="menuButton" onclick="startGame()">
+            ▶ JOUER
+        </button>
+
+        <button class="menuButton" onclick="showHowTo()">
+            ❔ COMMENT JOUER
+        </button>
+
+        <button class="menuButton" onclick="toggleMusic()">
+            🎵 MUSIQUE : ON
+        </button>
+
+    </div>
+
+    <div class="musicStatus">
+        Think About The Way — musique locale
+    </div>
+
+</section>
+
+
+<!-- ================= JEU ================= -->
+
+<section id="game">
+
+    <div class="topBar">
+
+        <div class="stat">
+            SCORE : <span id="score">0</span>
+        </div>
+
+        <div class="stat">
+            COMBO : <span id="combo">0</span>
+        </div>
+
+        <div class="stat">
+            ❤️ <span id="lives">3</span>
+        </div>
+
+    </div>
+
+    <div id="gameArea">
+
+        <h1 id="gameTitle">ÉPILATION RYTHMÉE</h1>
+
+        <p id="instructions">
+            Appuie au rythme pour retirer les poils !
+        </p>
+
+        <div class="character" id="character">
+
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+
+            <div class="mouth"></div>
+
+        </div>
+
+        <div id="feedback"></div>
+
+        <div id="beatCircle"></div>
+
+        <button id="actionButton" onclick="playerHit()">
+            🪒 RETIRER
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- ================= RESULTAT ================= -->
+
+<section id="result">
+
+    <h2>FIN DU NIVEAU</h2>
+
+    <div class="finalScore">
+        SCORE : <span id="finalScore">0</span>
+    </div>
+
+    <div id="finalMessage"></div>
+
+    <button class="resultButton" onclick="startGame()">
+        🔄 REJOUER
+    </button>
+
+    <button class="resultButton" onclick="backToMenu()">
+        🏠 MENU
+    </button>
+
+</section>
+
+
+<!-- ================= AUDIO ================= -->
+
+<audio id="music" loop>
+    <source src="music/think-about-the-way.mp3" type="audio/mpeg">
+</audio>
+
+
+<script>
+
+/* ============================================
+   VARIABLES
+============================================ */
+
+const menu = document.getElementById("menu");
+const game = document.getElementById("game");
+const result = document.getElementById("result");
+
+const character = document.getElementById("character");
+const feedback = document.getElementById("feedback");
+const beatCircle = document.getElementById("beatCircle");
+
+const scoreElement = document.getElementById("score");
+const comboElement = document.getElementById("combo");
+const livesElement = document.getElementById("lives");
+
+const music = document.getElementById("music");
+
+let score = 0;
+let combo = 0;
+let lives = 3;
+
+let playing = false;
+let musicEnabled = true;
+
+let beatInterval;
+let nextBeatTime = 0;
+
+let hairs = [];
+let currentHair = null;
+
+let bpm = 125;
+
+
+/* ============================================
+   MUSIQUE
+============================================ */
+
+function startMusic() {
+
+    if (!musicEnabled) return;
+
+    music.volume = 0.35;
+
+    music.play().catch(() => {
+        console.log("Le navigateur attend une interaction utilisateur.");
+    });
+}
+
+function toggleMusic() {
+
+    musicEnabled = !musicEnabled;
+
+    if (musicEnabled) {
+        music.play().catch(() => {});
+    } else {
+        music.pause();
+    }
+}
+
+
+/* ============================================
+   MENU
+============================================ */
+
+function startGame() {
+
+    menu.style.display = "none";
+    result.style.display = "none";
+    game.style.display = "block";
+
+    score = 0;
+    combo = 0;
+    lives = 3;
+
+    updateStats();
+
+    playing = true;
+
+    createHairs();
+
+    startMusic();
+
+    startRhythm();
+}
+
+
+function backToMenu() {
+
+    playing = false;
+
+    clearInterval(beatInterval);
+
+    game.style.display = "none";
+    result.style.display = "none";
+    menu.style.display = "flex";
+}
+
+
+/* ============================================
+   COMMENT JOUER
+============================================ */
+
+function showHowTo() {
+
+    alert(
+`COMMENT JOUER
+
+🪒 Appuie sur ESPACE ou sur le bouton RETIRER.
+
+🎵 Écoute le rythme.
+
+⭐ Appuie quand le cercle atteint son battement.
+
+PERFECT = 100 points
+GOOD = 50 points
+MISS = perte d'un cœur
+
+Plus ton combo monte, plus tu gagnes de points !`
+    );
+}
+
+
+/* ============================================
+   CREATION DES POILS
+============================================ */
+
+function createHairs() {
+
+    document.querySelectorAll(".hair").forEach(h => h.remove());
+
+    hairs = [];
+
+    const positions = [
+
+        [45,25],
+        [55,25],
+
+        [38,35],
+        [62,35],
+
+        [30,48],
+        [70,48],
+
+        [42,55],
+        [58,55],
+
+        [35,65],
+        [65,65],
+
+        [47,72],
+        [53,72]
+
+    ];
+
+    positions.forEach((pos,index) => {
+
+        const hair = document.createElement("div");
+
+        hair.className = "hair";
+
+        hair.style.left = pos[0] + "%";
+        hair.style.top = pos[1] + "%";
+
+        hair.dataset.index = index;
+
+        character.appendChild(hair);
+
+        hairs.push(hair);
+
+    });
+
+}
+
+
+/* ============================================
+   RYTHME
+============================================ */
+
+function startRhythm() {
+
+    clearInterval(beatInterval);
+
+    const beatDuration = 60000 / bpm;
+
+    nextBeatTime = performance.now() + beatDuration;
+
+    beatInterval = setInterval(() => {
+
+        if (!playing) return;
+
+        beat();
+
+    }, beatDuration);
+
+}
+
+
+/* ============================================
+   BATTEMENT
+============================================ */
+
+function beat() {
+
+    beatCircle.classList.remove("beat");
+
+    void beatCircle.offsetWidth;
+
+    beatCircle.classList.add("beat");
+
+    setTimeout(() => {
+
+        beatCircle.classList.remove("beat");
+
+    }, 100);
+
+    /* On crée un nouveau poil */
+
+    if (hairs.length > 0) {
+
+        const available = hairs.filter(
+            h => !h.classList.contains("removed")
+        );
+
+        if (available.length > 0) {
+
+            currentHair =
+                available[
+                    Math.floor(Math.random() * available.length)
+                ];
+
+        }
+
+    }
+
+}
+
+
+/* ============================================
+   ACTION JOUEUR
+============================================ */
+
+function playerHit() {
+
+    if (!playing) return;
+
+    if (!currentHair) {
+
+        registerMiss();
+
+        return;
+    }
+
+    /*
+        On utilise la taille du cercle comme
+        indication visuelle du timing.
+    */
+
+    const scale =
+        parseFloat(
+            getComputedStyle(beatCircle)
+            .transform
+            .split(",")[0]
+            ?.replace("matrix(","")
+        ) || 1;
+
+    /*
+        Le joueur peut appuyer légèrement
+        avant/après le beat.
+    */
+
+    const now = performance.now();
+
+    const beatDuration = 60000 / bpm;
+
+    const distance =
+        Math.abs(
+            ((now - nextBeatTime) % beatDuration)
+        );
+
+    let accuracy;
+
+    if (distance < 80 || distance > beatDuration - 80) {
+
+        accuracy = "PERFECT";
+
+    } else if (distance < 170 || distance > beatDuration - 170) {
+
+        accuracy = "GOOD";
+
+    } else {
+
+        accuracy = "MISS";
+
+    }
+
+    if (accuracy === "PERFECT") {
+
+        registerPerfect();
+
+    } else if (accuracy === "GOOD") {
+
+        registerGood();
+
+    } else {
+
+        registerMiss();
+
+    }
+
+}
+
+
+/* ============================================
+   PERFECT
+============================================ */
+
+function registerPerfect() {
+
+    if (currentHair) {
+
+        currentHair.classList.add("removed");
+
+        currentHair = null;
+
+    }
+
+    combo++;
+
+    score += 100 + combo * 5;
+
+    showFeedback("PERFECT!");
+
+    updateStats();
+
+    checkEnd();
+
+}
+
+
+/* ============================================
+   GOOD
+============================================ */
+
+function registerGood() {
+
+    if (currentHair) {
+
+        currentHair.classList.add("removed");
+
+        currentHair = null;
+
+    }
+
+    combo++;
+
+    score += 50 + combo * 2;
+
+    showFeedback("GOOD!");
+
+    updateStats();
+
+    checkEnd();
+
+}
+
+
+/* ============================================
+   MISS
+============================================ */
+
+function registerMiss() {
+
+    combo = 0;
+    lives--;
+
+    showFeedback("MISS!");
+
+    updateStats();
+
+    if (lives <= 0) {
+
+        endGame();
+
+    }
+
+}
+
+
+/* ============================================
+   FEEDBACK
+============================================ */
+
+function showFeedback(text) {
+
+    feedback.innerText = text;
+
+    feedback.classList.remove("show");
+
+    void feedback.offsetWidth;
+
+    feedback.classList.add("show");
+
+}
+
+
+/* ============================================
+   STATS
+============================================ */
+
+function updateStats() {
+
+    scoreElement.innerText = score;
+    comboElement.innerText = combo;
+    livesElement.innerText = lives;
+
+}
+
+
+/* ============================================
+   FIN
+============================================ */
+
+function checkEnd() {
+
+    const remaining =
+        hairs.filter(
+            h => !h.classList.contains("removed")
+        );
+
+    if (remaining.length === 0) {
+
+        endGame();
+
+    }
+
+}
+
+
+function endGame() {
+
+    playing = false;
+
+    clearInterval(beatInterval);
+
+    document.getElementById("finalScore").innerText = score;
+
+    let message;
+
+    if (score >= 1300) {
+
+        message = "🔥 INCROYABLE ! Tu as le rythme dans la peau !";
+
+    } else if (score >= 700) {
+
+        message = "😎 Pas mal du tout !";
+
+    } else {
+
+        message = "😂 Il va falloir travailler le rythme !";
+
+    }
+
+    document.getElementById("finalMessage").innerText = message;
+
+    result.style.display = "flex";
+
+}
+
+
+/* ============================================
+   CLAVIER
+============================================ */
+
+document.addEventListener("keydown", event => {
+
+    if (event.code === "Space") {
+
+        event.preventDefault();
+
+        playerHit();
+
+    }
+
+});
+
+
+/* ============================================
+   TACTILE
+============================================ */
+
+document.addEventListener("touchstart", event => {
+
+    if (
+        event.target.id === "actionButton"
+    ) return;
+
+    if (playing) {
+
+        playerHit();
+
+    }
+
+});
+
+
+/* ============================================
+   AUDIO INITIALISATION
+============================================ */
+
+music.addEventListener("error", () => {
+
+    console.log(
+        "Musique introuvable : ajoute music/think-about-the-way.mp3"
+    );
+
+});
+
+</script>
+
+</body>
+</html>
